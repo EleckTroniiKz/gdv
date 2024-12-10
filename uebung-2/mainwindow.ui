@@ -124,6 +124,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="planetSceneRenderCheckBox">
+         <property name="text">
+          <string>Planet Szene Rendern</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="gridSizeLabel">
          <property name="text">
           <string>Gittergröße</string>

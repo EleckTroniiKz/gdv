@@ -34,6 +34,7 @@ public slots:
     void setDefaults();
     void refreshFpsCounter();
     void triggerLightMovement(bool shouldMove = true);
+    void togglePlanetSceneRender(bool shouldRenderPlanets = false);
     void cameraMoves(float deltaX, float deltaY, float deltaZ);
     void cameraRotates(float deltaX, float deltaY);
     void changeShader(unsigned int index);
@@ -84,6 +85,8 @@ private:
     //timer for counting delta time of a frame, needed for light movement
     QElapsedTimer deltaTimer;
     bool lightMoves = false;
+
+    bool renderPlanetScene = false;
 
     //shaders
     std::vector<GLuint> programIDs;

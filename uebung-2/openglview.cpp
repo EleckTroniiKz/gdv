@@ -45,11 +45,11 @@ void OpenGLView::initializeGL()
     triMesh.setGLFunctionPtr(f);
 
     //Load ballon mesh
-    char const* filename = "../Modelle/ballon.off";
+    char const* filename = "../uebung-2/Modelle/ballon.off";
     triMesh.loadOFF(filename);
 
     //Load the sphere of the light
-    sphereMesh.loadOFF("../Modelle/sphere.off");
+    sphereMesh.loadOFF("../uebung-2/Modelle/sphere.off");
 
     // black screen
     f->glClearColor(0.f,0.f,0.f,1.f);
@@ -216,6 +216,11 @@ void OpenGLView::refreshFpsCounter()
 {
     emit fpsCountChanged(frameCounter);
     frameCounter = 0;
+}
+
+void OpenGLView::togglePlanetSceneRender(bool shouldRenderPlanets)
+{
+    renderPlanetScene = shouldRenderPlanets;
 }
 
 void OpenGLView::triggerLightMovement(bool shouldMove)

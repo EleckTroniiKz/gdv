@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->exitButton, &QPushButton::clicked, qApp, &QApplication::exit);
     connect(ui->gridSizeSpinBox, &QSpinBox::valueChanged, ui->openGLWidget, &OpenGLView::setGridSize);
     connect(ui->lightMovementCheckBox, &QCheckBox::clicked, ui->openGLWidget, &OpenGLView::triggerLightMovement);
+    connect(ui->planetSceneRenderCheckBox, &QCheckBox::clicked, ui->openGLWidget, &OpenGLView::togglePlanetSceneRender);
     connect(ui->resetViewButton, &QPushButton::clicked, ui->openGLWidget, &OpenGLView::setDefaults);
     connect(ui->drawModeComboBox, &QComboBox::currentIndexChanged, ui->openGLWidget, &OpenGLView::changeRenderMode);
     connect(ui->shaderComboBox, &QComboBox::currentIndexChanged, ui->openGLWidget, &OpenGLView::changeShader);
