@@ -10,6 +10,7 @@
 // ========================================================================= //
 
 #include <cmath>
+#include <vector>
 
 #include <QtDebug>
 #include <QMatrix4x4>
@@ -33,6 +34,25 @@ void OpenGLView::setGridSize(int gridSize)
     emit triangleCountChanged(getTriangleCount());
 }
 
+void OpenGLView::initializeSolarSystem() {
+    char const* path = "../uebung-2/Modelle/sphere.off";
+
+    // set OpenGL ptrs for the TriangleMesges of the solar system
+    sun.setGLFunctionPtr(f);
+    mercury.setGLFunctionPtr(f);
+    venus.setGLFunctionPtr(f);
+    earth.setGLFunctionPtr(f);
+    mars.setGLFunctionPtr(f);
+    moon.setGLFunctionPtr(f);
+
+    sun.loadOFF(path);
+    mercury.loadOFF(path);
+    venus.loadOFF(path);
+    earth.loadOFF(path);
+    mars.loadOFF(path);
+    moon.loadOFF(path);
+}
+
 void OpenGLView::initializeGL()
 {
     //load OpenGL functions
@@ -50,6 +70,7 @@ void OpenGLView::initializeGL()
 
     //Load the sphere of the light
     sphereMesh.loadOFF("../uebung-2/Modelle/sphere.off");
+    initializeSolarSystem();
 
     // black screen
     f->glClearColor(0.f,0.f,0.f,1.f);
@@ -98,7 +119,7 @@ void OpenGLView::resizeGL(int w, int h)
     update();
 }
 
-void OpenGLView::paintGL()
+void OpenGLView::paintGridObject()
 {
     // clear and set camera
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -154,6 +175,95 @@ void OpenGLView::paintGL()
             f->glPopMatrix();
         }
     }
+}
+
+void OpenGLView::updateSolarAnimation(float dT)
+{
+    t += dT;
+}
+
+float calculateDT() {
+    static std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    std::chrono::duration<float> elapsed = now - lastTime;
+    lastTime = now;
+    return elapsed.count(); 
+}
+
+void OpenGLView::paintSolarSystem() 
+{
+    // Clear the buffer and set the initial camera
+    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    f->glLoadIdentity();
+    f->glTranslatef(0.0f, 0.0f, -20.0f); // Assume a camera position that can view the whole solar system
+
+
+    // translate to centerPos
+    f->glTranslatef(centerPos.x(), centerPos.y(), centerPos.z());
+
+    // Set lighting and background
+    f->glEnable(GL_LIGHTING);
+    f->glColor3f(1.f, 1.f, 1.f);
+
+    // Draw the Sun at the origin
+    f->glPushMatrix();
+    f->glScalef(2.0f, 2.0f, 2.0f); // Scale the sun to be larger
+    sun.drawImmediate();
+    f->glPopMatrix();
+
+    // rotate scene, then render cs
+    f->glRotatef(angleX,0.0f,1.0f,0.0f);
+    f->glRotatef(angleY,1.0f,0.0f,0.0f);
+    drawCS();
+
+    // Set orbital parameters and draw each planet
+    const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f}; // Arbitrary orbital radii
+    TriangleMesh* planets[] = {&mercury, &venus, &earth, &mars};
+    const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f};
+    const float moonScale = 0.27f;
+    const float moonDistance = 1.5f;    
+    float timeFactor = 0.1f; // Speed of orbit
+
+    for (int i = 0; i < 4; ++i) {
+        float angle = t * timeFactor * (i + 1); // Each planet moves at a different speed
+        float x = cos(angle) * distances[i];
+        float z = sin(angle) * distances[i];
+
+        f->glPushMatrix();
+        f->glTranslatef(x, 0.0f, z);
+        f->glScalef(scaleFactors[i], scaleFactors[i], scaleFactors[i]); // Scale down the planets a bit
+        planets[i]->drawImmediate();
+
+        // Draw the moon orbiting Earth
+        if (planets[i] == &earth) {
+            float moonAngle = t * timeFactor * 10;  // Faster orbit for the moon
+            float moonX = cos(moonAngle) * moonDistance;
+            float moonZ = sin(moonAngle) * moonDistance;
+            f->glPushMatrix();
+            f->glTranslatef(moonX, 0.0f, moonZ);
+            f->glScalef(moonScale, moonScale, moonScale);
+            moon.drawImmediate();
+            f->glPopMatrix();
+        }
+
+        f->glPopMatrix();
+    }
+
+    f->glDisable(GL_LIGHTING);
+    f->glFlush();
+}
+
+void OpenGLView::paintGL()
+{
+
+    if(renderPlanetScene){
+        paintSolarSystem();
+        updateSolarAnimation(calculateDT());
+    }
+    else{
+        paintGridObject();
+    }
+    
     ++frameCounter;
     update();
 }

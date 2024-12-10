@@ -19,9 +19,9 @@
 #include <QOpenGLFunctions_2_1>
 #include <QObject>
 #include <QOpenGLWidget>
+#include <vector>
 
 #include "trianglemesh.h"
-#include "vec3.h"
 
 class OpenGLView : public QOpenGLWidget
 {
@@ -31,6 +31,7 @@ public:
 
 public slots:
     void setGridSize(int gridSize);
+    void initializeSolarSystem();
     void setDefaults();
     void refreshFpsCounter();
     void triggerLightMovement(bool shouldMove = true);
@@ -45,6 +46,9 @@ protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;
+    void paintGridObject();
+    void paintSolarSystem();
+    void updateSolarAnimation(float dT);
 
 signals:
     void fpsCountChanged(int newFps);
@@ -69,9 +73,17 @@ private:
     Vec3f lightPos;
     float lightMotionSpeed;
 
-    //rendered objects
+    //rendered objects for provided scene
     TriangleMesh triMesh;
     TriangleMesh sphereMesh;
+
+    //rendered objects for planetscene
+    TriangleMesh sun;
+    TriangleMesh mercury;
+    TriangleMesh venus;
+    TriangleMesh earth;
+    TriangleMesh mars;
+    TriangleMesh moon;
 
     //count of objects to render
     int gridSize;
@@ -81,6 +93,8 @@ private:
 
     //timer for counting FPS
     QTimer fpsCounterTimer;
+
+    float t = 0.0f;
 
     //timer for counting delta time of a frame, needed for light movement
     QElapsedTimer deltaTimer;
