@@ -52,12 +52,32 @@ void TriangleMesh::calculateNormals() {
 
 void TriangleMesh::rewriteAllVBOs() {
     //TODO: Fill VBO buffers with data (Ex. 2)
+
+	f->glBindBuffer(GL_ARRAY_BUFFER, VBOv);
+	f->glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+	// Normalen-Daten in VBO schreiben
+	f->glBindBuffer(GL_ARRAY_BUFFER, VBOn);
+	f->glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(Vertex), normals.data(), GL_STATIC_DRAW);
+
+	// Index-Daten in VBO schreiben
+	f->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOf);
+	f->glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangles.size() * sizeof(Triangle), triangles.data(), GL_STATIC_DRAW);
+
+	// Bindung aufheben
+	f->glBindBuffer(GL_ARRAY_BUFFER, 0);
+	f->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void TriangleMesh::createAllVBOs() {
 	//TODO: Generate Buffers (Ex. 2)
     
-    rewriteAllVBOs();
+
+	f->glGenBuffers(1, &VBOv); // Vertex-VBO erzeugen
+	f->glGenBuffers(1, &VBOn); // Normalen-VBO erzeugen
+	f->glGenBuffers(1, &VBOf); // Index-VBO erzeugen
+
+	rewriteAllVBOs(); // Daten in die VBOs schreiben
 }
 
 void TriangleMesh::cleanupVBO() {
@@ -239,10 +259,43 @@ void TriangleMesh::drawImmediate() {
 void TriangleMesh::drawArray() {
 	if (triangles.empty()) return;
 	//TODO: Implement Array Mode (Ex. 1)
+
+	f->glEnableClientState(GL_VERTEX_ARRAY);
+	f->glEnableClientState(GL_NORMAL_ARRAY);
+
+	f->glVertexPointer(3, GL_FLOAT, 0, vertices.data());
+
+	f->glNormalPointer(GL_FLOAT, 0, normals.data());
+
+	f->glDrawElements(GL_TRIANGLES, triangles.size() * 3, GL_UNSIGNED_INT, triangles.data());
+
+	f->glDisableClientState(GL_VERTEX_ARRAY);
+	f->glDisableClientState(GL_NORMAL_ARRAY);
 }
 
 void TriangleMesh::drawVBO() {
 	if (triangles.empty()) return;
 	if (VBOv == 0 || VBOn == 0 || VBOf == 0) return;
     //TODO: Implement VBO Mode (Ex. 2)
+
+	f->glBindBuffer(GL_ARRAY_BUFFER, VBOv); // Binden des Vertex-VBOs
+	f->glEnableClientState(GL_VERTEX_ARRAY); // Aktivieren des Vertex-Arrays
+	f->glVertexPointer(3, GL_FLOAT, 0, nullptr); // Vertex-Daten definieren (Pointer = 0, da sie jetzt in der GPU sind)
+
+	// 2. Normalen-VBO binden
+	f->glBindBuffer(GL_ARRAY_BUFFER, VBOn); // Binden des Normalen-VBOs
+	f->glEnableClientState(GL_NORMAL_ARRAY); // Aktivieren des Normalen-Arrays
+	f->glNormalPointer(GL_FLOAT, 0, nullptr); // Normalen-Daten definieren (Pointer = 0)
+
+	// 3. Index-VBO binden
+	f->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOf); // Binden des Index-VBOs
+
+	// 4. Zeichnen
+	f->glDrawElements(GL_TRIANGLES, triangles.size() * 3, GL_UNSIGNED_INT, nullptr); // Zeichnen der Elemente
+
+	// 5. Aufräumen
+	f->glDisableClientState(GL_VERTEX_ARRAY); // Vertex-Array deaktivieren
+	f->glDisableClientState(GL_NORMAL_ARRAY); // Normalen-Array deaktivieren
+	f->glBindBuffer(GL_ARRAY_BUFFER, 0); // VBO-Bindung aufheben
+	f->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // Index-VBO-Bindung aufheben
 }
