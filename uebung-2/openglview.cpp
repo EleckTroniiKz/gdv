@@ -125,6 +125,7 @@ void OpenGLView::paintGridObject()
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //    f->glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Set to black or any color you want for the background
     f->glLoadIdentity();
+    f->glEnable(GL_NORMALIZE);
 
     // translate to centerPos
     f->glTranslatef(centerPos.x(), centerPos.y(), centerPos.z());
@@ -190,45 +191,88 @@ float calculateDT() {
     return elapsed.count(); 
 }
 
+void OpenGLView::setupSunAndLight() {
+    // Set lighting and background
+    f->glEnable(GL_LIGHTING);
+    f->glEnable(GL_LIGHT0);  // Enable the first light
+    f->glEnable(GL_NORMALIZE);
+
+    // Set ambient, diffuse, and specular components for the light
+    GLfloat ambient[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    GLfloat diffuse[] = { 0.1f, 0.1f, 0.1f, 1.0f }; // Bright yellowish light, like the Sun
+    GLfloat specular[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+
+    // Apply light properties
+    f->glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+    f->glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    f->glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+
+    // Position the light at the origin (assuming the Sun is at the origin)
+    GLfloat lightPosition[] = { 0.0f, 0.0f, 0.0f, 1.0f };  // W component is 1 for positional light
+    f->glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+
+    GLfloat emissiveMaterial[] = { 0.65f, 0.65f, 0.0f, 1.0f };
+
+    // Draw the Sun as a bright sphere at the light's position
+    f->glPushMatrix();
+    f->glTranslatef(0.0f, 0.0f, 0.0f); // Translate to the origin
+    f->glScalef(2.0f, 2.0f, 2.0f);     // Scale up the Sun for visual prominence
+    f->glMaterialfv(GL_FRONT, GL_EMISSION, emissiveMaterial);
+    f->glColor3f(1.0f, 1.0f, 0.0f);    // Color the Sun yellow
+    sun.drawImmediate();        
+    f->glPopMatrix();
+
+    GLfloat noEmission[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    f->glMaterialfv(GL_FRONT, GL_EMISSION, noEmission);
+}
+
 void OpenGLView::paintSolarSystem() 
 {
     // Clear the buffer and set the initial camera
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glLoadIdentity();
-    f->glTranslatef(0.0f, 0.0f, -20.0f); // Assume a camera position that can view the whole solar system
-
+    f->glTranslatef(0.0f, 0.0f, -20.0f); // Ass ume a camera position that can view the whole solar system
+    
 
     // translate to centerPos
     f->glTranslatef(centerPos.x(), centerPos.y(), centerPos.z());
 
-    // Set lighting and background
-    f->glEnable(GL_LIGHTING);
-    f->glColor3f(1.f, 1.f, 1.f);
-
-    // Draw the Sun at the origin
-    f->glPushMatrix();
-    f->glScalef(2.0f, 2.0f, 2.0f); // Scale the sun to be larger
-    sun.drawImmediate();
-    f->glPopMatrix();
-
     // rotate scene, then render cs
     f->glRotatef(angleX,0.0f,1.0f,0.0f);
     f->glRotatef(angleY,1.0f,0.0f,0.0f);
+    setupSunAndLight();
     drawCS();
 
     // Set orbital parameters and draw each planet
     const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f}; // Arbitrary orbital radii
     TriangleMesh* planets[] = {&mercury, &venus, &earth, &mars};
     const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f};
+    GLfloat colors[][3] = {
+        {0.5f, 0.5f, 0.5f},
+        {1.0f, 0.8f, 0.6f},
+        {0.0f, 0.0f, 1.0f},
+        {1.0f, 0.0f, 0.0f}
+    };
+    GLfloat moonColor[][3] = {
+        {0.6f, 0.7f, 0.6f}
+    };
     const float moonScale = 0.27f;
-    const float moonDistance = 1.5f;    
+    const float moonDistance = 3.0f;    
     float timeFactor = 0.1f; // Speed of orbit
+
+    GLfloat ambientLight[] = { 0.05f, 0.05f, 0.05f, 1.0f };
+    GLfloat diffuseLight[] = { 0.3f, 0.3f, 0.3f, 1.0f }; // Subtle white light, less intense than the Sun
+    GLfloat specularLight[] = { 0.05f, 0.05f, 0.05f, 1.0f };
+
+    f->glEnable(GL_LIGHT1);
+    f->glEnable(GL_LIGHTING);
 
     for (int i = 0; i < 4; ++i) {
         float angle = t * timeFactor * (i + 1); // Each planet moves at a different speed
         float x = cos(angle) * distances[i];
         float z = sin(angle) * distances[i];
 
+        f->glColor3fv(colors[i]);
         f->glPushMatrix();
         f->glTranslatef(x, 0.0f, z);
         f->glScalef(scaleFactors[i], scaleFactors[i], scaleFactors[i]); // Scale down the planets a bit
@@ -236,20 +280,39 @@ void OpenGLView::paintSolarSystem()
 
         // Draw the moon orbiting Earth
         if (planets[i] == &earth) {
+
+            
+
             float moonAngle = t * timeFactor * 10;  // Faster orbit for the moon
             float moonX = cos(moonAngle) * moonDistance;
             float moonZ = sin(moonAngle) * moonDistance;
+            GLfloat moonLightPos[] = { moonX, 0.0f, moonZ, 1.0f };
+
+
+            f->glLightfv(GL_LIGHT1, GL_POSITION, moonLightPos);
+            f->glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight);
+            f->glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
+            f->glLightfv(GL_LIGHT1, GL_SPECULAR, specularLight);
+            
+
+            GLfloat emissiveMaterial[] = { 0.65f, 0.65f, 0.65f, 1.0f };
+            f->glMaterialfv(GL_FRONT, GL_EMISSION, emissiveMaterial);
+
             f->glPushMatrix();
             f->glTranslatef(moonX, 0.0f, moonZ);
             f->glScalef(moonScale, moonScale, moonScale);
+            f->glColor3fv(moonColor[0]);
             moon.drawImmediate();
             f->glPopMatrix();
+            GLfloat noEmission[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            f->glMaterialfv(GL_FRONT, GL_EMISSION, noEmission);
         }
 
         f->glPopMatrix();
     }
 
     f->glDisable(GL_LIGHTING);
+    f->glDisable(GL_LIGHT1);
     f->glFlush();
 }
 

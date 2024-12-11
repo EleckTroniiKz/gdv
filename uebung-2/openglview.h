@@ -108,6 +108,7 @@ private:
     void drawCS();
     void drawLight();
     void moveLight();
+    void setupSunAndLight();
     unsigned int getTriangleCount() const;
 };
 
