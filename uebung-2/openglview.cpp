@@ -247,6 +247,7 @@ void OpenGLView::paintSolarSystem()
     const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f}; // Arbitrary orbital radii
     TriangleMesh* planets[] = {&mercury, &venus, &earth, &mars};
     const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f};
+    const float orbitalPeriods[] = { 88.0f, 224.78f, 365.25f, 687.0f };
     GLfloat colors[][3] = {
         {0.5f, 0.5f, 0.5f},
         {1.0f, 0.8f, 0.6f},
@@ -268,7 +269,7 @@ void OpenGLView::paintSolarSystem()
     f->glEnable(GL_LIGHTING);
 
     for (int i = 0; i < 4; ++i) {
-        float angle = t * timeFactor * (i + 1); // Each planet moves at a different speed
+        float angle = 2 * M_PI * (t / orbitalPeriods[i] * 10.0f); // Kepler's Laws of Planetary Motion
         float x = cos(angle) * distances[i];
         float z = sin(angle) * distances[i];
 
@@ -337,6 +338,8 @@ void OpenGLView::paintGL()
 
 void OpenGLView::drawCS()
 {
+    // Draw coordinate system
+
     f->glBegin(GL_LINES);
     // red X
     f->glColor3f(1.f, 0.f, 0.f);
