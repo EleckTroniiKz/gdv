@@ -51,7 +51,7 @@ protected:
     void updateSolarAnimation(float dT);
 
 signals:
-    void fpsCountChanged(int newFps);
+    void fpsCountChanged(int newFps, int newMs);
     void triangleCountChanged(unsigned int newTriangles);
     void shaderCompiled(unsigned int index);
 
@@ -84,6 +84,10 @@ private:
     TriangleMesh earth;
     TriangleMesh mars;
     TriangleMesh moon;
+
+    // Timer for Task 3
+    QElapsedTimer performanceTimer;
+    unsigned int timeToDraw = 0;
 
     //count of objects to render
     int gridSize;

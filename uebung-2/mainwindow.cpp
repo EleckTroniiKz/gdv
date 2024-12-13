@@ -18,7 +18,7 @@
 #include "./ui_mainwindow.h"
 
 void MainWindow::refreshStatusBarMessage() const {
-    statusBar()->showMessage(tr("FPS: %1, Triangles: %2").arg(fpsCount).arg(triangleCount));
+    statusBar()->showMessage(tr("FPS: %1, Triangles: %2, Frame Render Time: %3 ms").arg(fpsCount).arg(triangleCount).arg(msCount));
 }
 
 void MainWindow::changeTriangleCount(unsigned int triangles)
@@ -27,9 +27,10 @@ void MainWindow::changeTriangleCount(unsigned int triangles)
     refreshStatusBarMessage();
 }
 
-void MainWindow::changeFpsCount(unsigned int fps)
+void MainWindow::changeFpsCount(unsigned int fps, unsigned int ms)
 {
     fpsCount = fps;
+    msCount = ms;
     refreshStatusBarMessage();
 }
 

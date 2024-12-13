@@ -29,7 +29,7 @@ private slots:
 
 public slots:
     void changeTriangleCount(unsigned int triangles);
-    void changeFpsCount(unsigned int fps);
+    void changeFpsCount(unsigned int fps, unsigned int ms);
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -43,6 +43,7 @@ private:
     Ui::MainWindow *ui;
     unsigned int fpsCount = 0;
     unsigned int triangleCount = 0;
+    unsigned int msCount = 0;
     void refreshStatusBarMessage() const;
 
     // mouse information

@@ -318,6 +318,7 @@ void OpenGLView::paintSolarSystem()
 
 void OpenGLView::paintGL()
 {
+    performanceTimer.start();
 
     if(renderPlanetScene){
         paintSolarSystem();
@@ -326,7 +327,10 @@ void OpenGLView::paintGL()
     else{
         paintGridObject();
     }
+
+    qint64 elapsedTime = performanceTimer.elapsed();
     
+    timeToDraw = elapsedTime;
     ++frameCounter;
     update();
 }
@@ -387,7 +391,7 @@ void OpenGLView::setDefaults()
 
 void OpenGLView::refreshFpsCounter()
 {
-    emit fpsCountChanged(frameCounter);
+    emit fpsCountChanged(frameCounter, timeToDraw);
     frameCounter = 0;
 }
 
