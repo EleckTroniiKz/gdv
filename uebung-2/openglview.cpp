@@ -37,7 +37,6 @@ void OpenGLView::setGridSize(int gridSize)
 void OpenGLView::initializeSolarSystem() {
     char const* path = "../uebung-2/Modelle/sphere.off";
 
-    // set OpenGL ptrs for the TriangleMesges of the solar system
     sun.setGLFunctionPtr(f);
     mercury.setGLFunctionPtr(f);
     venus.setGLFunctionPtr(f);
@@ -121,21 +120,7 @@ void OpenGLView::resizeGL(int w, int h)
 
 void OpenGLView::paintGridObject()
 {
-    // clear and set camera
-    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//    f->glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Set to black or any color you want for the background
-    f->glLoadIdentity();
-    f->glEnable(GL_NORMALIZE);
-
-    // translate to centerPos
-    f->glTranslatef(centerPos.x(), centerPos.y(), centerPos.z());
-
-    // disable lighting for coordinate system and light sphere
-    f->glDisable(GL_LIGHTING);
-
-    // rotate scene, then render cs
-    f->glRotatef(angleX,0.0f,1.0f,0.0f);
-    f->glRotatef(angleY,1.0f,0.0f,0.0f);
+    
     drawCS();
 
     if (lightMoves) {
@@ -178,12 +163,12 @@ void OpenGLView::paintGridObject()
     }
 }
 
-void OpenGLView::updateSolarAnimation(float dT)
-{
-    t += dT;
-}
-
 float calculateDT() {
+    /*
+    Berechne delta-t, um so die Planeten im Solarsystem zu bewegen. 
+    Methode prüft wie lange es her ist, dass diese Methode ausgeführt wurde. 
+    Zum nachlesen: https://en.cppreference.com/w/cpp/chrono/steady_clock
+    */
     static std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
     std::chrono::duration<float> elapsed = now - lastTime;
@@ -199,7 +184,7 @@ void OpenGLView::setupSunAndLight() {
 
     // Set ambient, diffuse, and specular components for the light
     GLfloat ambient[] = { 0.05f, 0.05f, 0.05f, 1.0f };
-    GLfloat diffuse[] = { 0.3f, 0.3f, 0.0f, 1.0f }; // Bright yellowish light, like the Sun
+    GLfloat diffuse[] = { 0.3f, 0.3f, 0.0f, 1.0f };
     GLfloat specular[] = { 0.05f, 0.05f, 0.05f, 1.0f };
 
     // Apply light properties
@@ -219,7 +204,7 @@ void OpenGLView::setupSunAndLight() {
     f->glScalef(2.0f, 2.0f, 2.0f);     // Scale up the Sun for visual prominence
     f->glMaterialfv(GL_FRONT, GL_EMISSION, emissiveMaterial);
     f->glColor3f(1.0f, 1.0f, 0.0f);    // Color the Sun yellow
-    sun.drawImmediate();        
+    sun.drawVBO();        
     f->glPopMatrix();
 
     GLfloat noEmission[] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -228,102 +213,94 @@ void OpenGLView::setupSunAndLight() {
 
 void OpenGLView::paintSolarSystem() 
 {
-    // Clear the buffer and set the initial camera
-    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    f->glLoadIdentity();
-    f->glTranslatef(0.0f, 0.0f, -20.0f); // Ass ume a camera position that can view the whole solar system
-    
-
-    // translate to centerPos
-    f->glTranslatef(centerPos.x(), centerPos.y(), centerPos.z());
-
-    // rotate scene, then render cs
-    f->glRotatef(angleX,0.0f,1.0f,0.0f);
-    f->glRotatef(angleY,1.0f,0.0f,0.0f);
     setupSunAndLight();
     drawCS();
 
-    // Set orbital parameters and draw each planet
-    const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f}; // Arbitrary orbital radii
+    // Values for Orbit
+    const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f, 3.0f};
     TriangleMesh* planets[] = {&mercury, &venus, &earth, &mars};
-    const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f};
+    const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f, 0.27f};
     const float orbitalPeriods[] = { 88.0f, 224.78f, 365.25f, 687.0f };
     GLfloat colors[][3] = {
-        {0.5f, 0.5f, 0.5f},
-        {1.0f, 0.8f, 0.6f},
-        {0.0f, 0.0f, 1.0f},
-        {1.0f, 0.0f, 0.0f}
+        {0.5f, 0.5f, 0.5f}, // mercury  color
+        {1.0f, 0.8f, 0.6f}, // venus color
+        {0.0f, 0.0f, 1.0f}, // earth color
+        {1.0f, 0.0f, 0.0f}, // mars color
+        {0.6f, 0.7f, 0.6f} // moon color
     };
-    GLfloat moonColor[][3] = {
-        {0.6f, 0.7f, 0.6f}
-    };
-    const float moonScale = 0.27f;
-    const float moonDistance = 3.0f;    
-    float timeFactor = 0.1f; // Speed of orbit
+      
+    float timeFactor = 1.0f; // Speed of orbit
 
     GLfloat ambientLight[] = { 0.05f, 0.05f, 0.05f, 1.0f };
-    GLfloat diffuseLight[] = { 0.3f, 0.3f, 0.3f, 1.0f }; // Subtle white light, less intense than the Sun
+    GLfloat diffuseLight[] = { 0.3f, 0.3f, 0.3f, 1.0f };
     GLfloat specularLight[] = { 0.05f, 0.05f, 0.05f, 1.0f };
 
     f->glEnable(GL_LIGHT1);
     f->glEnable(GL_LIGHTING);
 
     for (int i = 0; i < 4; ++i) {
-        float angle = 2 * M_PI * (t / orbitalPeriods[i] * 10.0f); // Kepler's Laws of Planetary Motion
+        float angle = 2 * M_PI * (t / orbitalPeriods[i] * 10.0f);
         float x = cos(angle) * distances[i];
         float z = sin(angle) * distances[i];
 
         f->glColor3fv(colors[i]);
         f->glPushMatrix();
         f->glTranslatef(x, 0.0f, z);
-        f->glScalef(scaleFactors[i], scaleFactors[i], scaleFactors[i]); // Scale down the planets a bit
-        planets[i]->drawImmediate();
+        f->glScalef(scaleFactors[i], scaleFactors[i], scaleFactors[i]); // Planeten herunterskalieren, sodass alle in eine VIew passen
+        planets[i]->drawVBO();
 
         // Draw the moon orbiting Earth
         if (planets[i] == &earth) {
 
-            
-
-            float moonAngle = t * timeFactor * 10;  // Faster orbit for the moon
-            float moonX = cos(moonAngle) * moonDistance;
-            float moonZ = sin(moonAngle) * moonDistance;
-            GLfloat moonLightPos[] = { moonX, 0.0f, moonZ, 1.0f };
-
+            float moonAngle = t * timeFactor;
+            float moonX = cos(moonAngle) * distances[4];
+            float moonZ = sin(moonAngle) * distances[4];
+            GLfloat moonLightPos[] = { moonX, 0.0f, moonZ, 1.0f};
 
             f->glLightfv(GL_LIGHT1, GL_POSITION, moonLightPos);
             f->glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight);
             f->glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
             f->glLightfv(GL_LIGHT1, GL_SPECULAR, specularLight);
-            
 
             GLfloat emissiveMaterial[] = { 0.65f, 0.65f, 0.65f, 1.0f };
             f->glMaterialfv(GL_FRONT, GL_EMISSION, emissiveMaterial);
 
             f->glPushMatrix();
             f->glTranslatef(moonX, 0.0f, moonZ);
-            f->glScalef(moonScale, moonScale, moonScale);
-            f->glColor3fv(moonColor[0]);
-            moon.drawImmediate();
+            f->glScalef(scaleFactors[4], scaleFactors[4], scaleFactors[4]);
+            f->glColor3fv(colors[4]);
+            moon.drawVBO();
             f->glPopMatrix();
+
             GLfloat noEmission[] = { 0.0f, 0.0f, 0.0f, 1.0f };
             f->glMaterialfv(GL_FRONT, GL_EMISSION, noEmission);
         }
 
         f->glPopMatrix();
     }
-
-    f->glDisable(GL_LIGHTING);
-    f->glDisable(GL_LIGHT1);
-    f->glFlush();
 }
 
 void OpenGLView::paintGL()
 {
     performanceTimer.start();
 
+    // Clear the buffer and set the initial camera
+    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    f->glLoadIdentity();
+    f->glEnable(GL_NORMALIZE);
+
+    // translate to centerPos
+    f->glTranslatef(centerPos.x(), centerPos.y(), centerPos.z());
+
+    f->glDisable(GL_LIGHTING);
+
+    // rotate scene, then render cs
+    f->glRotatef(angleX, 0.0f, 1.0f, 0.0f);
+    f->glRotatef(angleY, 1.0f, 0.0f, 0.0f);
+
     if(renderPlanetScene){
         paintSolarSystem();
-        updateSolarAnimation(calculateDT());
+        t += calculateDT();
     }
     else{
         paintGridObject();
@@ -394,6 +371,7 @@ void OpenGLView::setDefaults()
 
 void OpenGLView::refreshFpsCounter()
 {
+    // Senden hier auch die Performance Metrics mit, weil es aus irgendeinem Grund nicht geklappt hat mit neuem Signal
     emit fpsCountChanged(frameCounter, timeToDraw);
     frameCounter = 0;
 }

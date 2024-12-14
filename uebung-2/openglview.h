@@ -48,7 +48,6 @@ protected:
     void paintGL() override;
     void paintGridObject();
     void paintSolarSystem();
-    void updateSolarAnimation(float dT);
 
 signals:
     void fpsCountChanged(int newFps, int newMs);
