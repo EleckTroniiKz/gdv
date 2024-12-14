@@ -198,9 +198,9 @@ void OpenGLView::setupSunAndLight() {
     f->glEnable(GL_NORMALIZE);
 
     // Set ambient, diffuse, and specular components for the light
-    GLfloat ambient[] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    GLfloat diffuse[] = { 0.1f, 0.1f, 0.1f, 1.0f }; // Bright yellowish light, like the Sun
-    GLfloat specular[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    GLfloat ambient[] = { 0.05f, 0.05f, 0.05f, 1.0f };
+    GLfloat diffuse[] = { 0.3f, 0.3f, 0.0f, 1.0f }; // Bright yellowish light, like the Sun
+    GLfloat specular[] = { 0.05f, 0.05f, 0.05f, 1.0f };
 
     // Apply light properties
     f->glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
