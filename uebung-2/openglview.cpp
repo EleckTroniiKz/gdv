@@ -37,6 +37,7 @@ void OpenGLView::setGridSize(int gridSize)
 void OpenGLView::initializeSolarSystem() {
     char const* path = "../uebung-2/Modelle/sphere.off";
 
+    // Setze GLFunctionPtr für SolarObjekte, weil es auch für die anderen Objhekte gemacht wurde.
     sun.setGLFunctionPtr(f);
     mercury.setGLFunctionPtr(f);
     venus.setGLFunctionPtr(f);
@@ -216,22 +217,23 @@ void OpenGLView::paintSolarSystem()
     setupSunAndLight();
     drawCS();
 
-    // Values for Orbit
-    const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f, 3.0f};
-    TriangleMesh* planets[] = {&mercury, &venus, &earth, &mars};
-    const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f, 0.27f};
+    // Sonnensystemkonstanten
+    const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f, 3.0f}; // Distanzen der Objekte zur Sonne (außer letzter Eintrag. Das ist die Distanz zwischen Mond und Erde)
+    TriangleMesh* planets[] = {&mercury, &venus, &earth, &mars}; // Um die schleife später schöner zu machen speichern wir Referenzen zu den Variablen in eine Liste
+    const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f, 0.27f}; // SKalierungswerte der Celestial Objekte
     const float orbitalPeriods[] = { 88.0f, 224.78f, 365.25f, 687.0f };
     GLfloat colors[][3] = {
-        {0.5f, 0.5f, 0.5f}, // mercury  color
-        {1.0f, 0.8f, 0.6f}, // venus color
-        {0.0f, 0.0f, 1.0f}, // earth color
-        {1.0f, 0.0f, 0.0f}, // mars color
-        {0.6f, 0.7f, 0.6f} // moon color
+        {0.5f, 0.5f, 0.5f}, // mercury farbe
+        {1.0f, 0.8f, 0.6f}, // venus farbe
+        {0.0f, 0.0f, 1.0f}, // earth farbe
+        {1.0f, 0.0f, 0.0f}, // mars farbe
+        {0.6f, 0.7f, 0.6f} // moon farbe
     };
       
-    float timeFactor = 1.0f; // Speed of orbit
+    float timeFactor = 1.0f; // Orbit geschwindigkeit
 
-    GLfloat ambientLight[] = { 0.05f, 0.05f, 0.05f, 1.0f };
+    // Beleuchtungskonstanten Mond
+    GLfloat ambientLight[] = { 0.05f, 0.05f, 0.05f, 1.0f }; 
     GLfloat diffuseLight[] = { 0.3f, 0.3f, 0.3f, 1.0f };
     GLfloat specularLight[] = { 0.05f, 0.05f, 0.05f, 1.0f };
 
@@ -239,32 +241,38 @@ void OpenGLView::paintSolarSystem()
     f->glEnable(GL_LIGHTING);
 
     for (int i = 0; i < 4; ++i) {
+       /*
+        Keplers Law aber vereinfacht, sodass die Bewegung streng circular ist statt spherical. 
+       */
         float angle = 2 * M_PI * (t / orbitalPeriods[i] * 10.0f);
         float x = cos(angle) * distances[i];
         float z = sin(angle) * distances[i];
 
-        f->glColor3fv(colors[i]);
-        f->glPushMatrix();
-        f->glTranslatef(x, 0.0f, z);
+        f->glColor3fv(colors[i]); // setze Farve vom aktuellen planeten
+        f->glPushMatrix(); // aktuelle Transformation in MAtrix Stack speichern. 
+        f->glTranslatef(x, 0.0f, z); 
         f->glScalef(scaleFactors[i], scaleFactors[i], scaleFactors[i]); // Planeten herunterskalieren, sodass alle in eine VIew passen
-        planets[i]->drawVBO();
+        planets[i]->drawVBO(); // Rendere Planet (VBO Mode wurde gewählt, weil dieser sehr viel schnelelr ist als immediate und Array)
 
-        // Draw the moon orbiting Earth
+        // Male den Mooond!
         if (planets[i] == &earth) {
 
-            float moonAngle = t * timeFactor;
+            float moonAngle = t * timeFactor; // Winkel wird basierend auf Zeit berechnet.
             float moonX = cos(moonAngle) * distances[4];
             float moonZ = sin(moonAngle) * distances[4];
-            GLfloat moonLightPos[] = { moonX, 0.0f, moonZ, 1.0f};
+            GLfloat moonLightPos[] = { moonX, 0.0f, moonZ, 1.0f}; // Aktuelle Mond Position definieren, um diese für das Licht zu targeten.
 
-            f->glLightfv(GL_LIGHT1, GL_POSITION, moonLightPos);
-            f->glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight);
-            f->glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight);
-            f->glLightfv(GL_LIGHT1, GL_SPECULAR, specularLight);
+            f->glLightfv(GL_LIGHT1, GL_POSITION, moonLightPos); // Lichtposition setzen für Mond
+            f->glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight); // indirektes Licht 
+            f->glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight); // directes Licht
+            f->glLightfv(GL_LIGHT1, GL_SPECULAR, specularLight); // Reflektiertes Licht
 
-            GLfloat emissiveMaterial[] = { 0.65f, 0.65f, 0.65f, 1.0f };
-            f->glMaterialfv(GL_FRONT, GL_EMISSION, emissiveMaterial);
 
+            // Material definieren sodass der Mond etwas "glowed" und wirklich so wirkt als wäre es eine Lichtquelle
+            GLfloat moonMaterial[] = { 0.65f, 0.65f, 0.65f, 1.0f };
+            f->glMaterialfv(GL_FRONT, GL_EMISSION, moonMaterial);
+
+            // Selber prozess wie oben
             f->glPushMatrix();
             f->glTranslatef(moonX, 0.0f, moonZ);
             f->glScalef(scaleFactors[4], scaleFactors[4], scaleFactors[4]);
@@ -272,43 +280,38 @@ void OpenGLView::paintSolarSystem()
             moon.drawVBO();
             f->glPopMatrix();
 
+            // Material resetten, sonst werden die OBjekte die danach gemalt werden auch glowen.
             GLfloat noEmission[] = { 0.0f, 0.0f, 0.0f, 1.0f };
             f->glMaterialfv(GL_FRONT, GL_EMISSION, noEmission);
         }
 
-        f->glPopMatrix();
+        f->glPopMatrix(); // Vorherigen Transformationsstand wiederherstellen, sodass vorherige Transformationen nicht "überschrieben"/reverted werden.
     }
 }
 
 void OpenGLView::paintGL()
 {
-    performanceTimer.start();
+    performanceTimer.start(); // Starte Time um zu messen wie lange es dauert, ein Frame zu "malen"
 
-    // Clear the buffer and set the initial camera
-    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    f->glLoadIdentity();
-    f->glEnable(GL_NORMALIZE);
-
-    // translate to centerPos
-    f->glTranslatef(centerPos.x(), centerPos.y(), centerPos.z());
-
-    f->glDisable(GL_LIGHTING);
-
-    // rotate scene, then render cs
+    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Farb buffer und Tiefenbuffer clearen. Verhindert visuelle Artifakte weil Screen "resetteed"  wird
+    f->glLoadIdentity(); // aktuelle Matrix wird zur Identity Matrix resetted, sodass keine vorherigen Transformationen noch beeinflussen.
+    f->glEnable(GL_NORMALIZE); // Zusatz von Moodle: Macht Beleuchtung schöner.
+    f->glTranslatef(centerPos.x(), centerPos.y(), centerPos.z()); // Szene Zentrieren
+    f->glDisable(GL_LIGHTING); // VBeleuchtung ausschalten (fü+r jetzt)
     f->glRotatef(angleX, 0.0f, 1.0f, 0.0f);
     f->glRotatef(angleY, 1.0f, 0.0f, 0.0f);
 
     if(renderPlanetScene){
-        paintSolarSystem();
+        paintSolarSystem(); // Rendere das Solarsystem (Aufg. 5)
         t += calculateDT();
     }
     else{
-        paintGridObject();
+        paintGridObject(); // Rendere die Ansicht mit den Heißluftballons im Grid
     }
 
-    qint64 elapsedTime = performanceTimer.elapsed();
+    qint64 elapsedTime = performanceTimer.elapsed(); // Messe wie lange es gedauert hat einen Frame zu malen -> Gibt in Millisekunden die Performance an. Zum Prüfen Gitter Wert erhöhen bei Luftbalons.
     
-    timeToDraw = elapsedTime;
+    timeToDraw = elapsedTime; // Speichere REnder-Time in MS für die Ausgabe
     ++frameCounter;
     update();
 }
