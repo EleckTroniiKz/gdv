@@ -43,6 +43,10 @@ void OpenGLView::initializeSolarSystem() {
     venus.setGLFunctionPtr(f);
     earth.setGLFunctionPtr(f);
     mars.setGLFunctionPtr(f);
+    jupiter.setGLFunctionPtr(f);
+    saturn.setGLFunctionPtr(f);
+    uranus.setGLFunctionPtr(f);
+    neptune.setGLFunctionPtr(f);
     moon.setGLFunctionPtr(f);
 
     sun.loadOFF(path);
@@ -50,6 +54,10 @@ void OpenGLView::initializeSolarSystem() {
     venus.loadOFF(path);
     earth.loadOFF(path);
     mars.loadOFF(path);
+    jupiter.loadOFF(path);
+    saturn.loadOFF(path);
+    uranus.loadOFF(path);
+    neptune.loadOFF(path);
     moon.loadOFF(path);
 }
 
@@ -104,7 +112,7 @@ void OpenGLView::resizeGL(int w, int h)
     //Calculate new projection matrix
     QMatrix4x4 projectionMatrix;
     const float aspectRatio = static_cast<float>(w) / static_cast<float>(h);
-    projectionMatrix.perspective(65.f, aspectRatio, 0.1f, 100.f);
+    projectionMatrix.perspective(65.f, aspectRatio, 0.1f, 1000.f);
 
     //Resize viewport
     f->glViewport(0, 0, w, h);
@@ -184,9 +192,9 @@ void OpenGLView::setupSunAndLight() {
     f->glEnable(GL_NORMALIZE);
 
     // Set ambient, diffuse, and specular components for the light
-    GLfloat ambient[] = { 0.05f, 0.05f, 0.05f, 1.0f };
-    GLfloat diffuse[] = { 0.3f, 0.3f, 0.0f, 1.0f };
-    GLfloat specular[] = { 0.05f, 0.05f, 0.05f, 1.0f };
+    GLfloat ambient[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    GLfloat diffuse[] = { 1.0f, 0.95f, 0.9f, 1.0f };
+    GLfloat specular[] = { 1.0f, 1.0f, 0.9f, 1.0f };
 
     // Apply light properties
     f->glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
@@ -218,16 +226,20 @@ void OpenGLView::paintSolarSystem()
     drawCS();
 
     // Sonnensystemkonstanten
-    const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f, 3.0f}; // Distanzen der Objekte zur Sonne (außer letzter Eintrag. Das ist die Distanz zwischen Mond und Erde)
-    TriangleMesh* planets[] = {&mercury, &venus, &earth, &mars}; // Um die schleife später schöner zu machen speichern wir Referenzen zu den Variablen in eine Liste
-    const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f, 0.27f}; // SKalierungswerte der Celestial Objekte
-    const float orbitalPeriods[] = { 88.0f, 224.78f, 365.25f, 687.0f };
+    const float distances[] = {6.0f, 9.0f, 12.0f, 16.0f, 3.0f, 20.0f, 30.0f, 50.0f, 70.0f }; // Distanzen der Objekte zur Sonne (außer letzter Eintrag. Das ist die Distanz zwischen Mond und Erde)
+    TriangleMesh* planets[] = {&mercury, &venus, &earth, &mars, &jupiter, &saturn, &uranus, &neptune}; // Um die schleife später schöner zu machen speichern wir Referenzen zu den Variablen in eine Liste
+    const float scaleFactors[] = {0.38f, 0.95f, 1.0f, 0.53f, 0.27f, 3.0f, 2.5f, 1.5f, 1.4f}; // SKalierungswerte der Celestial Objekte
+    const float orbitalPeriods[] = { 88.0f, 225.0f, 365.25f, 687.0f, 4333.0f, 10756.0f, 30687.0f, 60190.0f};
     GLfloat colors[][3] = {
         {0.5f, 0.5f, 0.5f}, // mercury farbe
         {1.0f, 0.8f, 0.6f}, // venus farbe
         {0.0f, 0.0f, 1.0f}, // earth farbe
         {1.0f, 0.0f, 0.0f}, // mars farbe
-        {0.6f, 0.7f, 0.6f} // moon farbe
+        {0.6f, 0.7f, 0.6f}, // moon farbe
+        {0.8f, 0.7f, 0.5f}, // jupiter farbe
+        {1.0f, 0.9f, 0.6f}, // saturn farbe
+        {0.6f, 0.8f, 0.9f}, // uranus farbe
+        {0.0f, 0.0f, 0.8f}  // neptune farbe
     };
       
     float timeFactor = 1.0f; // Orbit geschwindigkeit
@@ -240,7 +252,10 @@ void OpenGLView::paintSolarSystem()
     f->glEnable(GL_LIGHT1);
     f->glEnable(GL_LIGHTING);
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 8; ++i) {
+        if (i == 4) {
+            continue;
+        }
        /*
         Keplers Law aber vereinfacht, sodass die Bewegung streng circular ist statt spherical. 
        */

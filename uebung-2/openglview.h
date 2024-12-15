@@ -82,6 +82,10 @@ private:
     TriangleMesh venus;
     TriangleMesh earth;
     TriangleMesh mars;
+    TriangleMesh jupiter;
+    TriangleMesh saturn;
+    TriangleMesh uranus;
+    TriangleMesh neptune;
     TriangleMesh moon;
 
     // Timer for Task 3
