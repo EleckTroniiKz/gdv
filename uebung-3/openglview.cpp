@@ -14,6 +14,7 @@
 #include <QtDebug>
 #include <QMatrix4x4>
 #include <QOpenGLVersionFunctionsFactory>
+#include <iostream>
 
 #include "shader.h"
 #include "openglview.h"
@@ -48,20 +49,21 @@ void OpenGLView::initializeGL()
     //enable depth buffer
     f->glEnable(GL_DEPTH_TEST);
 
-    GLuint testTexture = loadImageIntoTexture(f, "../Textures/TEST_GRID.bmp");
+    GLuint testTexture = loadImageIntoTexture(f, "../uebung-3/Textures/TEST_GRID.bmp");
 
-    GLuint diffuseTexture = loadImageIntoTexture(f, "../Textures/rough_block_wall_diff_1k.jpg", true);
-    GLuint normalTexture = loadImageIntoTexture(f, "../Textures/rough_block_wall_nor_1k.jpg", true);
-    GLuint displacementTexture = loadImageIntoTexture(f, "../Textures/rough_block_wall_disp_1k.jpg", true);
+    GLuint diffuseTexture = loadImageIntoTexture(f, "../uebung-3/Textures/rough_block_wall_diff_1k.jpg", true);
+    GLuint normalTexture = loadImageIntoTexture(f, "../uebung-3/Textures/rough_block_wall_nor_1k.jpg", true);
+    GLuint displacementTexture = loadImageIntoTexture(f, "../uebung-3/Textures/rough_block_wall_disp_1k.jpg", true);
+    std::cout << "This code is in file: " << __FILE__ << std::endl;
 
     //Load the sphere of the light
     sphereMesh.setGLFunctionPtr(f);
-    sphereMesh.loadOFF("../Models/sphere.off");
+    sphereMesh.loadOFF("../uebung-3/Models/sphere.off");
     sphereMesh.setStaticColor(Vec3f(1.0f, 1.0f, 0.0f));
 
     //load meshes
     meshes.emplace_back(f);
-    meshes[0].loadOFF("../Models/doppeldecker.off");
+    meshes[0].loadOFF("../uebung-3/Models/doppeldecker.off");
     meshes[0].setStaticColor(Vec3f(0.0f, 1.0f, 0.0f));
     meshes[0].setTexture(testTexture);
     meshes[0].setColoringMode(TriangleMesh::ColoringType::TEXTURE);
@@ -82,16 +84,16 @@ void OpenGLView::initializeGL()
     csVAO = genCSVAO();
 
     //load shaders
-    GLuint lightShaderID = readShaders(f, "../Shader/only_mvp.vert", "../Shader/constant_color.frag");
+    GLuint lightShaderID = readShaders(f, "../uebung-3/Shader/only_mvp.vert", "../uebung-3/Shader/constant_color.frag");
     if (lightShaderID) {
         programIDs.push_back(lightShaderID);
         state.setStandardProgram(lightShaderID);
     }
-    GLuint shaderID = readShaders(f, "../Shader/only_mvp.vert", "../Shader/lambert.frag");
+    GLuint shaderID = readShaders(f, "../uebung-3/Shader/only_mvp.vert", "../uebung-3/Shader/lambert.frag");
     if (shaderID != 0) programIDs.push_back(shaderID);
     currentProgramID = lightShaderID;
 
-    bumpProgramID = readShaders(f, "../Shader/bump.vert", "../Shader/bump.frag");
+    bumpProgramID = readShaders(f, "../uebung-3/Shader/bump.vert", "../uebung-3/Shader/bump.frag");
 
     emit shaderCompiled(0);
     emit shaderCompiled(1);
