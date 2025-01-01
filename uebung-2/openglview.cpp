@@ -37,7 +37,7 @@ void OpenGLView::setGridSize(int gridSize)
 void OpenGLView::initializeSolarSystem() {
     char const* path = "../uebung-2/Modelle/sphere.off";
 
-    // Setze GLFunctionPtr für SolarObjekte, weil es auch für die anderen Objhekte gemacht wurde.
+    // Setze Function Pointer innerhalb der Triangle Meshes
     sun.setGLFunctionPtr(f);
     mercury.setGLFunctionPtr(f);
     venus.setGLFunctionPtr(f);
@@ -103,6 +103,7 @@ void OpenGLView::initializeGL()
     // white shiny specular highlights
     GLfloat specularLightMaterial[] =  { 1.0f, 1.0f, 1.0f, 1.0f };
     GLfloat shininessMaterial = 128.0f;
+    // Setze Material Eigenschaften. Material wird auf Vorder- und Rückseite angewendet. 
     f->glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininessMaterial);
     f->glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specularLightMaterial);
 }
@@ -178,10 +179,15 @@ float calculateDT() {
     Methode prüft wie lange es her ist, dass diese Methode ausgeführt wurde. 
     Zum nachlesen: https://en.cppreference.com/w/cpp/chrono/steady_clock
     */
+    // Variable um letzten Zeitpunkt zu speichern
     static std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
+    // aktueller Zeitpunkt
     auto now = std::chrono::steady_clock::now();
+    // berechne die vergangene Zeit
     std::chrono::duration<float> elapsed = now - lastTime;
+    // update
     lastTime = now;
+    // returne zeit als sekunden anzahl
     return elapsed.count(); 
 }
 
