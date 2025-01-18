@@ -125,6 +125,132 @@ void OpenGLView::drawSkybox() {
     // draw skybox
     // ...
     // restore matrix and attributes
+
+    static bool initialized = false;
+    static GLuint skyboxShader = 0;
+    static GLuint skyboxVAO = 0;
+    static GLuint skyboxTexture = 0;
+
+    if (!initialized) {
+        // Eigenen Skybox-Shader laden (Vertex- und Fragment-Shader für Cubemaps)
+        skyboxShader = readShaders(f,
+                                   "../uebung-3/Shader/skybox.vert",
+                                   "../uebung-3/Shader/skybox.frag");
+        if (skyboxShader == 0) {
+            qWarning("Skybox-Shader konnten nicht geladen werden!");
+            return;
+        }
+
+        // Würfel-Vertexdaten für Skybox
+        float skyboxVertices[] = {
+            //  x      y      z
+            -1.f,  1.f, -1.f,
+            -1.f, -1.f, -1.f,
+             1.f, -1.f, -1.f,
+             1.f, -1.f, -1.f,
+             1.f,  1.f, -1.f,
+            -1.f,  1.f, -1.f,
+
+            -1.f, -1.f,  1.f,
+            -1.f, -1.f, -1.f,
+            -1.f,  1.f, -1.f,
+            -1.f,  1.f, -1.f,
+            -1.f,  1.f,  1.f,
+            -1.f, -1.f,  1.f,
+
+             1.f, -1.f, -1.f,
+             1.f, -1.f,  1.f,
+             1.f,  1.f,  1.f,
+             1.f,  1.f,  1.f,
+             1.f,  1.f, -1.f,
+             1.f, -1.f, -1.f,
+
+            -1.f, -1.f,  1.f,
+            -1.f,  1.f,  1.f,
+             1.f,  1.f,  1.f,
+             1.f,  1.f,  1.f,
+             1.f, -1.f,  1.f,
+            -1.f, -1.f,  1.f,
+
+            -1.f,  1.f, -1.f,
+             1.f,  1.f, -1.f,
+             1.f,  1.f,  1.f,
+             1.f,  1.f,  1.f,
+            -1.f,  1.f,  1.f,
+            -1.f,  1.f, -1.f,
+
+            -1.f, -1.f, -1.f,
+            -1.f, -1.f,  1.f,
+             1.f, -1.f, -1.f,
+             1.f, -1.f, -1.f,
+            -1.f, -1.f,  1.f,
+             1.f, -1.f,  1.f
+        };
+        GLuint skyboxVBO;
+        f->glGenVertexArrays(1, &skyboxVAO);
+        f->glGenBuffers(1, &skyboxVBO);
+
+        f->glBindVertexArray(skyboxVAO);
+        f->glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+        f->glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
+        f->glEnableVertexAttribArray(0);
+        f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        f->glBindVertexArray(0);
+
+        // Cubemap laden
+        const char* faces[6] = {
+            "../uebung-3/Textures/skybox1/pos_x.bmp",
+            "../uebung-3/Textures/skybox1/neg_x.bmp",
+            "../uebung-3/Textures/skybox1/pos_y.bmp",
+            "../uebung-3/Textures/skybox1/neg_y.bmp",
+            "../uebung-3/Textures/skybox1/pos_z.bmp",
+            "../uebung-3/Textures/skybox1/neg_z.bmp"
+        };
+        skyboxTexture = loadCubeMap(f, faces);
+        if (skyboxTexture == 0) {
+            qWarning("Skybox-Texturen konnten nicht geladen werden!");
+            return;
+        }
+
+        initialized = true;
+    }
+
+    // Tiefentest anpassen und Skybox zeichnen
+    f->glDepthFunc(GL_LEQUAL); 
+    f->glDisable(GL_DEPTH_TEST);
+    f->glUseProgram(skyboxShader);
+
+    // View-Matrix ohne Translation setzen
+    QMatrix4x4 view = state.getCurrentModelViewMatrix();
+    view.setColumn(3, QVector4D(0, 0, 0, 1));
+
+    GLint viewLoc = f->glGetUniformLocation(skyboxShader, "view");
+    GLint projLoc = f->glGetUniformLocation(skyboxShader, "projection");
+    if (viewLoc != -1) {
+        f->glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view.constData());
+    }
+    if (projLoc != -1) {
+        f->glUniformMatrix4fv(projLoc, 1, GL_FALSE, state.getCurrentProjectionMatrix().constData());
+    }
+
+    // Cubemap-Sampler binden
+    f->glActiveTexture(GL_TEXTURE0);
+    f->glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+    GLint skyboxLoc = f->glGetUniformLocation(skyboxShader, "skybox");
+    if (skyboxLoc != -1) {
+        f->glUniform1i(skyboxLoc, 0);
+    }
+
+    // Skybox-Würfel zeichnen
+    f->glBindVertexArray(skyboxVAO);
+    f->glDrawArrays(GL_TRIANGLES, 0, 36);
+    f->glBindVertexArray(0);
+
+    // Aufräumen
+    f->glUseProgram(0);
+    f->glEnable(GL_DEPTH_TEST);
+    f->glDepthFunc(GL_LESS);
+    
 }
 
 void OpenGLView::paintGL() {
