@@ -510,8 +510,75 @@ void TriangleMesh::drawVBO(RenderState& state) {
 // ===========
 
 bool TriangleMesh::boundingBoxIsVisible(const RenderState& state) {
-    // TODO(3.3): Implement view frustum culling.
-    return true;
+
+    // Retrieve the view-projection matrix from the RenderState
+    QMatrix4x4 viewProjectionMatrix = state.getCurrentProjectionMatrix() * state.getCurrentModelViewMatrix();
+
+    // Extract the six clipping planes from the view-projection matrix
+    std::array<ClipPlane, 6> planes = {
+        ClipPlane(
+            viewProjectionMatrix(0, 3) + viewProjectionMatrix(0, 0),
+            viewProjectionMatrix(1, 3) + viewProjectionMatrix(1, 0),
+            viewProjectionMatrix(2, 3) + viewProjectionMatrix(2, 0),
+            viewProjectionMatrix(3, 3) + viewProjectionMatrix(3, 0)
+        ),
+        ClipPlane(
+            viewProjectionMatrix(0, 3) - viewProjectionMatrix(0, 0),
+            viewProjectionMatrix(1, 3) - viewProjectionMatrix(1, 0),
+            viewProjectionMatrix(2, 3) - viewProjectionMatrix(2, 0),
+            viewProjectionMatrix(3, 3) - viewProjectionMatrix(3, 0)
+        ),
+        ClipPlane(
+            viewProjectionMatrix(0, 3) + viewProjectionMatrix(0, 1),
+            viewProjectionMatrix(1, 3) + viewProjectionMatrix(1, 1),
+            viewProjectionMatrix(2, 3) + viewProjectionMatrix(2, 1),
+            viewProjectionMatrix(3, 3) + viewProjectionMatrix(3, 1)
+        ),
+        ClipPlane(
+            viewProjectionMatrix(0, 3) - viewProjectionMatrix(0, 1),
+            viewProjectionMatrix(1, 3) - viewProjectionMatrix(1, 1),
+            viewProjectionMatrix(2, 3) - viewProjectionMatrix(2, 1),
+            viewProjectionMatrix(3, 3) - viewProjectionMatrix(3, 1)
+        ),
+        ClipPlane(
+            viewProjectionMatrix(0, 3) + viewProjectionMatrix(0, 2),
+            viewProjectionMatrix(1, 3) + viewProjectionMatrix(1, 2),
+            viewProjectionMatrix(2, 3) + viewProjectionMatrix(2, 2),
+            viewProjectionMatrix(3, 3) + viewProjectionMatrix(3, 2)
+        ),
+        ClipPlane(
+            viewProjectionMatrix(0, 3) - viewProjectionMatrix(0, 2),
+            viewProjectionMatrix(1, 3) - viewProjectionMatrix(1, 2),
+            viewProjectionMatrix(2, 3) - viewProjectionMatrix(2, 2),
+            viewProjectionMatrix(3, 3) - viewProjectionMatrix(3, 2)
+        )
+    };
+
+    // Test the bounding box against each clipping plane
+    std::array<Vec3f, 8> corners = {
+        boundingBoxMin,
+        Vec3f(boundingBoxMax.x(), boundingBoxMin.y(), boundingBoxMin.z()),
+        Vec3f(boundingBoxMin.x(), boundingBoxMax.y(), boundingBoxMin.z()),
+        Vec3f(boundingBoxMin.x(), boundingBoxMin.y(), boundingBoxMax.z()),
+        Vec3f(boundingBoxMax.x(), boundingBoxMax.y(), boundingBoxMin.z()),
+        Vec3f(boundingBoxMax.x(), boundingBoxMin.y(), boundingBoxMax.z()),
+        Vec3f(boundingBoxMin.x(), boundingBoxMax.y(), boundingBoxMax.z()),
+        boundingBoxMax
+    };
+
+    for (auto& plane : planes) {
+        bool allOutside = true;
+        for (const auto& corner : corners) {
+            if (plane.evaluatePoint(corner) > 0) {
+                allOutside = false;
+                break;
+            }
+        }
+        if (allOutside) {
+            return false; // Bounding box is outside this plane
+        }
+    }
+    return true; // Bounding box is inside or intersects all planes
 }
 
 void TriangleMesh::setStaticColor(Vec3f color) {
