@@ -511,41 +511,49 @@ void TriangleMesh::drawVBO(RenderState& state) {
 
 bool TriangleMesh::boundingBoxIsVisible(const RenderState& state) {
 
+
     // Retrieve the view-projection matrix from the RenderState
     QMatrix4x4 viewProjectionMatrix = state.getCurrentProjectionMatrix() * state.getCurrentModelViewMatrix();
 
-    // Extract the six clipping planes from the view-projection matrix
+    // Planes des View Frustums aus der projection Matrix rausziehen
+    // https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf Appendix B
     std::array<ClipPlane, 6> planes = {
+        // Left Plane
         ClipPlane(
             viewProjectionMatrix(0, 3) + viewProjectionMatrix(0, 0),
             viewProjectionMatrix(1, 3) + viewProjectionMatrix(1, 0),
             viewProjectionMatrix(2, 3) + viewProjectionMatrix(2, 0),
             viewProjectionMatrix(3, 3) + viewProjectionMatrix(3, 0)
         ),
+        // Right Plane
         ClipPlane(
             viewProjectionMatrix(0, 3) - viewProjectionMatrix(0, 0),
             viewProjectionMatrix(1, 3) - viewProjectionMatrix(1, 0),
             viewProjectionMatrix(2, 3) - viewProjectionMatrix(2, 0),
             viewProjectionMatrix(3, 3) - viewProjectionMatrix(3, 0)
         ),
+        // Bottom Plane
         ClipPlane(
             viewProjectionMatrix(0, 3) + viewProjectionMatrix(0, 1),
             viewProjectionMatrix(1, 3) + viewProjectionMatrix(1, 1),
             viewProjectionMatrix(2, 3) + viewProjectionMatrix(2, 1),
             viewProjectionMatrix(3, 3) + viewProjectionMatrix(3, 1)
         ),
+        // Top Plane
         ClipPlane(
             viewProjectionMatrix(0, 3) - viewProjectionMatrix(0, 1),
             viewProjectionMatrix(1, 3) - viewProjectionMatrix(1, 1),
             viewProjectionMatrix(2, 3) - viewProjectionMatrix(2, 1),
             viewProjectionMatrix(3, 3) - viewProjectionMatrix(3, 1)
         ),
+        // Near Plane
         ClipPlane(
             viewProjectionMatrix(0, 3) + viewProjectionMatrix(0, 2),
             viewProjectionMatrix(1, 3) + viewProjectionMatrix(1, 2),
             viewProjectionMatrix(2, 3) + viewProjectionMatrix(2, 2),
             viewProjectionMatrix(3, 3) + viewProjectionMatrix(3, 2)
         ),
+        // Far Plane
         ClipPlane(
             viewProjectionMatrix(0, 3) - viewProjectionMatrix(0, 2),
             viewProjectionMatrix(1, 3) - viewProjectionMatrix(1, 2),
@@ -554,27 +562,32 @@ bool TriangleMesh::boundingBoxIsVisible(const RenderState& state) {
         )
     };
 
-    // Test the bounding box against each clipping plane
+    // Alle Eckpunkte der Bounding Box vom aktuellen Triangle Mesh
     std::array<Vec3f, 8> corners = {
-        boundingBoxMin,
-        Vec3f(boundingBoxMax.x(), boundingBoxMin.y(), boundingBoxMin.z()),
-        Vec3f(boundingBoxMin.x(), boundingBoxMax.y(), boundingBoxMin.z()),
-        Vec3f(boundingBoxMin.x(), boundingBoxMin.y(), boundingBoxMax.z()),
-        Vec3f(boundingBoxMax.x(), boundingBoxMax.y(), boundingBoxMin.z()),
-        Vec3f(boundingBoxMax.x(), boundingBoxMin.y(), boundingBoxMax.z()),
-        Vec3f(boundingBoxMin.x(), boundingBoxMax.y(), boundingBoxMax.z()),
-        boundingBoxMax
+        boundingBoxMin, // A
+        Vec3f(boundingBoxMax.x(), boundingBoxMin.y(), boundingBoxMin.z()), // B
+        Vec3f(boundingBoxMin.x(), boundingBoxMax.y(), boundingBoxMin.z()), // C 
+        Vec3f(boundingBoxMin.x(), boundingBoxMin.y(), boundingBoxMax.z()), // D
+        Vec3f(boundingBoxMax.x(), boundingBoxMax.y(), boundingBoxMin.z()), // E
+        Vec3f(boundingBoxMax.x(), boundingBoxMin.y(), boundingBoxMax.z()), // F
+        Vec3f(boundingBoxMin.x(), boundingBoxMax.y(), boundingBoxMax.z()), // G
+        boundingBoxMax // H
     };
 
     for (auto& plane : planes) {
-        bool allOutside = true;
+        bool meshNotVisible = true; // Annahme: alle Punkte sind außerhalb der Plane
         for (const auto& corner : corners) {
             if (plane.evaluatePoint(corner) > 0) {
-                allOutside = false;
+                /* Resultat von evaluate Point : 
+                    >0 = Punkt liegt auf sichtbaren Seite der Ebene
+                    == 0 = Punkt liegt auf der Ebene
+                    <0 = Punkt liegt auf der nicht sichtbaren Seite der Ebene
+                */
+                meshNotVisible = false;
                 break;
             }
         }
-        if (allOutside) {
+        if (meshNotVisible) {
             return false; // Bounding box is outside this plane
         }
     }
