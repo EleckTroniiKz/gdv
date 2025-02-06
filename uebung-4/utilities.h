@@ -13,11 +13,6 @@
 #include "vec3.h"
 #include "ray.h"
 
-struct Light {
-    QVector3D position;
-    QVector3D intensity;
-};
-
 struct Material {
     QVector3D ka;
     QVector3D kd;
@@ -59,7 +54,6 @@ GLuint loadCubeMap(QOpenGLFunctions_3_3_Core* f, const char* fileName[6]);
 
 bool rayAABBIntersect(const Ray<float>& r, const Vec3f& vmin, const Vec3f& vmax, float t0, float t1);
 
-QVector3D computePhongLighting(const QVector3D& point, const QVector3D& normal, const QVector3D& viewDir, const Light& light, const Material& material);
 
 inline QVector3D& Vec3fToQVector3D(Vec3f& vec) { return reinterpret_cast<QVector3D&>(vec); }
 inline const QVector3D& Vec3fToQVector3D(const Vec3f& vec) { return reinterpret_cast<const QVector3D&>(vec); }
@@ -117,7 +111,6 @@ InputIterator intersectRayObjectsEarliest(InputIterator objects_begin, InputIter
                 earliest_v = current_v;
                 eraliest_hitTri = j;
                 earliest_iter = iter;
-                closestObject = iter;
             }
         }
     }

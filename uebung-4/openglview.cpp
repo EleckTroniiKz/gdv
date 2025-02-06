@@ -130,6 +130,14 @@ void OpenGLView::initializeGL()
     state.setStandardProgram(lightShaderID);
     currentProgramID = lightShaderID;
     // TODO: Ex 4.1a Implement shader for Phong lighting
+    
+    GLuint phongShaderID = readShaders(f, "../Shader/phong.vert", "../Shader/phong.frag");
+    if (phongShaderID != 0) {
+        programIDs.push_back(phongShaderID);
+        currentProgramID = phongShaderID;
+    }
+    state.setCurrentProgram(currentProgramID);
+    
     // TODO: Ex 4.2b Implement shader for Blinn-Phong lighting using shadow map
     for (const auto& i : { std::pair<const char*, const char*>
             {"../Shader/only_mvp.vert", "../Shader/blinn_phong_shadow.frag"},
@@ -418,8 +426,38 @@ void OpenGLView::raytrace() {
             if (hitMesh != objects.cend()) {
                 // TODO: Ex 4.1a
                 // Calculate pixel color according to Phong model
-                // FIXME: Constant white
-                rgb = Vec3f(1.0f, 1.0f, 1.0f);
+                 
+                const SceneObject& hitObject = *hitMesh;
+
+                Vec3f intersection = ray.o + t * ray.d;
+
+                const std::vector<Vec3f>& vertices = hitObject.mesh.getVertices();
+                const std::vector<Vec3ui>& triangles = hitObject.mesh.getTriangles();
+
+                Vec3f p0 = vertices[triangles[hitTri][0]];
+                Vec3f p1 = vertices[triangles[hitTri][1]];
+                Vec3f p2 = vertices[triangles[hitTri][2]];
+
+                Vec3f normal = cross(p1 - p0, p2 - p0).normalized();
+
+                Vec3f lightPos = state.getLight().position;
+                Vec3f lightDir = (lightPos - intersection).normalized();
+                Vec3f viewDir = (ray.o - intersection).normalized();
+
+                Vec3f reflectDir = (2.0f * normal * (normal * lightDir) - lightDir).normalized();
+
+                Vec3f ambient = hitObject.ambientColor * state.getLight().ambientIntensity;
+                Vec3f diffuse = hitObject.diffuseColor * std::max(0.0f, normal * lightDir) * state.getLight().lightIntensity;
+                Vec3f specular = hitObject.specularColor * pow(std::max(0.0f, reflectDir * viewDir), hitObject.shininess) * state.getLight().lightIntensity;
+
+                rgb = ambient + diffuse + specular;
+                 
+                rgb.x() = std::min(1.0f, std::max(0.0f, rgb.x()));
+                rgb.y() = std::min(1.0f, std::max(0.0f, rgb.y()));
+                rgb.z() = std::min(1.0f, std::max(0.0f, rgb.z()));
+                
+
+
 #pragma omp atomic
                 hits++;
             }
