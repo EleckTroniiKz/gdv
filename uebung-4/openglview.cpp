@@ -68,13 +68,13 @@ void OpenGLView::initializeGL()
 
     //Load the sphere of the light
     sphereMesh.setGLFunctionPtr(f);
-    sphereMesh.loadOFF("../Models/sphere.off");
+    sphereMesh.loadOFF("../uebung-4/Models/sphere.off");
 
     //load meshes
     meshes.emplace_back(f);
-    meshes[0].loadOFF("../Models/doppeldecker.off");
+    meshes[0].loadOFF("../uebung-4/Models/doppeldecker.off");
     meshes.emplace_back(f);
-    meshes[1].loadOFF("../Models/cube.off");
+    meshes[1].loadOFF("../uebung-4/Models/cube.off");
 
     objects.emplace_back(Vec3f(0.2f, 0.1f, 0.1f),
                          Vec3f(0.6f, 0.3f, 0.3f),
@@ -125,13 +125,13 @@ void OpenGLView::initializeGL()
     rayTraceVAO = genRayTraceVAO();
 
     //load shaders
-    GLuint lightShaderID = readShaders(f, "../Shader/only_mvp.vert", "../Shader/constant_color.frag");
+    GLuint lightShaderID = readShaders(f, "../uebung-4/Shader/only_mvp.vert", "../uebung-4/Shader/constant_color.frag");
     programIDs.push_back(lightShaderID);
     state.setStandardProgram(lightShaderID);
     currentProgramID = lightShaderID;
     // TODO: Ex 4.1a Implement shader for Phong lighting
     
-    GLuint phongShaderID = readShaders(f, "../Shader/phong.vert", "../Shader/phong.frag");
+    GLuint phongShaderID = readShaders(f, "../uebung-4/Shader/phong.vert", "../uebung-4/Shader/phong.frag");
     if (phongShaderID != 0) {
         programIDs.push_back(phongShaderID);
         currentProgramID = phongShaderID;
@@ -140,14 +140,14 @@ void OpenGLView::initializeGL()
     
     // TODO: Ex 4.2b Implement shader for Blinn-Phong lighting using shadow map
     for (const auto& i : { std::pair<const char*, const char*>
-            {"../Shader/only_mvp.vert", "../Shader/blinn_phong_shadow.frag"},
-            {"../Shader/only_mvp.vert", "../Shader/phong.frag"},
+            {"../uebung-4/Shader/only_mvp.vert", "../uebung-4/Shader/blinn_phong_shadow.frag"},
+            {"../uebung-4/Shader/only_mvp.vert", "../uebung-4/Shader/phong.frag"},
     }) {
         GLuint shaderID = readShaders(f, i.first, i.second);
         if (shaderID != 0) programIDs.push_back(shaderID);
     }
 
-    rayTracingProgramID = readShaders(f, "../Shader/noop.vert", "../Shader/from_texture.frag");
+    rayTracingProgramID = readShaders(f, "../uebung-4/Shader/noop.vert", "../uebung-4/Shader/from_texture.frag");
 
     // TODO: Ex 4.2a Implement shader for calculation of shadow map
 
