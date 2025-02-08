@@ -107,6 +107,7 @@ private:
     static GLuint rayTraceVAO, rayTraceVBOs[2];
     GLuint raytracedTextureID{};
     void raytrace();
+    Vec3f traceRay(const Ray<float>& ray, int recursion_depth, unsigned int& intersectionTests);
     bool showRayTracing = false;
 
     //shadow mapping
