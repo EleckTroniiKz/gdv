@@ -42,6 +42,11 @@ struct autoMoved {
     T operator()() { return val; }
 };
 
+inline float dot(const Vec3f& a, const Vec3f& b)
+{
+    return a.x() * b.x() + a.y() * b.y() + a.z() * b.z();
+}
+
 extern const GLfloat BoxVertices[];
 extern const size_t BoxVerticesSize;
 extern const GLuint BoxLineIndices[];
@@ -65,7 +70,7 @@ inline const Vec3f& QVector3DToVec3f(const QVector3D& vec) { return reinterpret_
 template <typename InputIterator>
 InputIterator intersectRayObjectsEarliest(InputIterator objects_begin, InputIterator objects_end, const Ray<float>& ray, float& t, float& u, float& v, unsigned int& hitTri, unsigned int& intersectionTests) {
     
-    float t_min = std::numeric_limits<float>::max(); // So groß wie möglich gewählt, um sicherzustellen, dass erste gefundene Schnittpunkt kleiner ist.
+    float t_min = std::numeric_limits<float>::max(); // So groï¿½ wie mï¿½glich gewï¿½hlt, um sicherzustellen, dass erste gefundene Schnittpunkt kleiner ist.
     InputIterator earliest_iter = objects_end;
     unsigned int eraliest_hitTri = 0;
     float earliest_u = 0.0f;
@@ -114,7 +119,7 @@ InputIterator intersectRayObjectsEarliest(InputIterator objects_begin, InputIter
             }
         }
     }
-    // Return das nächst gelegene Objekt das geschnitten wurde
+    // Return das nï¿½chst gelegene Objekt das geschnitten wurde
     if (earliest_iter != objects_end) {
         t = t_min;
         u = earliest_u;
