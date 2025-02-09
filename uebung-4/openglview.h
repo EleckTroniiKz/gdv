@@ -108,6 +108,7 @@ private:
     GLuint raytracedTextureID{};
     void raytrace();
     Vec3f traceRay(const Ray<float>& ray, int recursion_depth, unsigned int& intersectionTests);
+    Vec3f refract(const Vec3f& incident, const Vec3f& normal, float eta);
     bool showRayTracing = false;
 
     //shadow mapping

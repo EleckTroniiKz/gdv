@@ -32,8 +32,8 @@ unsigned int SceneObject::draw(RenderState &state, const QMatrix4x4* lightMatrix
     return result;
 }
 
-SceneObject::SceneObject(const Vec3f &ambientCol, const Vec3f &diffuseCol, const Vec3f &specularCol, float shini, float reflect, TriangleMesh &msh, const Vec3f& pos, const Vec3f& scale)
-: ambientColor(ambientCol), diffuseColor(diffuseCol), specularColor(specularCol), shininess(shini), reflectionIntensity(reflect), mesh(msh) {
+SceneObject::SceneObject(const Vec3f &ambientCol, const Vec3f &diffuseCol, const Vec3f &specularCol, float shini, float reflect, TriangleMesh &msh, const Vec3f& pos, const Vec3f& scale, float transp, float refrIdx)
+: ambientColor(ambientCol), diffuseColor(diffuseCol), specularColor(specularCol), shininess(shini), reflectionIntensity(reflect), mesh(msh), transparency(transp), refractiveIndex(refrIdx) {
     translate(pos);
     this->scale(scale);
 }

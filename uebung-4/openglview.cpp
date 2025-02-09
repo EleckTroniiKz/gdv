@@ -76,6 +76,15 @@ void OpenGLView::initializeGL()
     meshes.emplace_back(f);
     meshes[1].loadOFF("../uebung-4/Models/cube.off");
 
+    objects.emplace_back(Vec3f(0.2f, 0.1f, 0.1f), 
+        Vec3f(0.6f, 0.3f, 0.3f), 
+        Vec3f(0.4f, 0.4f, 0.4f), 
+        100.0f, 0.2f, 
+        meshes[0],
+        Vec3f(-4.0f, 0.0f, 0.0f),
+        Vec3(1.0f, 1.0f, 1.0f), 
+        0.0f, 1.5f);
+
     objects.emplace_back(Vec3f(0.2f, 0.1f, 0.1f),
         Vec3f(0.6f, 0.3f, 0.3f),
         Vec3f(0.4f, 0.4f, 0.4f),
@@ -413,9 +422,9 @@ Vec3f OpenGLView::traceRay(const Ray<float>& ray, int recursion_depth, unsigned 
     Vec3f intersectionPoint = ray.o + t * ray.d;
 
     // Dreiecks-Eckpunkte aus dem Mesh
-    const auto& vertices   = hitObject.mesh.getVertices();
-    const auto& triangles  = hitObject.mesh.getTriangles();
-    const Vec3ui& tri      = triangles[hitTri];
+    const auto& vertices = hitObject.mesh.getVertices();
+    const auto& triangles = hitObject.mesh.getTriangles();
+    const Vec3ui& tri = triangles[hitTri];
     Vec3f p0 = vertices[tri[0]];
     Vec3f p1 = vertices[tri[1]];
     Vec3f p2 = vertices[tri[2]];
@@ -425,9 +434,9 @@ Vec3f OpenGLView::traceRay(const Ray<float>& ray, int recursion_depth, unsigned 
 
     // 4. Schattentest (S_i)
     // Kleinen Offset in Normalenrichtung, damit wir nicht „uns selbst“ treffen
-    const float eps = 1e-3f;  
-    Vec3f lightPos  = state.getLight().position;
-    Vec3f lightDir  = (lightPos - intersectionPoint).normalized();
+    const float eps = 1e-3f;
+    Vec3f lightPos = state.getLight().position;
+    Vec3f lightDir = (lightPos - intersectionPoint).normalized();
     float lightDist = (lightPos - intersectionPoint).length();
 
     Ray<float> shadowRay(intersectionPoint + normal * eps, lightDir);
@@ -443,14 +452,13 @@ Vec3f OpenGLView::traceRay(const Ray<float>& ray, int recursion_depth, unsigned 
     }
 
     // 5. Phong-Beleuchtung für diesen Schnittpunkt
-    Vec3f viewDir    = (ray.o - intersectionPoint).normalized();
-    Vec3f ambient    = hitObject.ambientColor  * state.getLight().ambientIntensity;
-    float NdotL      = std::max(0.0f, dot(normal, lightDir));
-    Vec3f diffuse    = hitObject.diffuseColor  * NdotL * state.getLight().lightIntensity;
+    Vec3f viewDir = (ray.o - intersectionPoint).normalized();
+    Vec3f ambient = hitObject.ambientColor * state.getLight().ambientIntensity;
+    float NdotL = std::max(0.0f, dot(normal, lightDir));
+    Vec3f diffuse = hitObject.diffuseColor * NdotL * state.getLight().lightIntensity;
     Vec3f reflectDir = (2.0f * normal * (normal * lightDir) - lightDir).normalized();
-    float RdotV      = std::max(0.0f, dot(reflectDir, viewDir));
-    Vec3f specular   = hitObject.specularColor * std::pow(RdotV, hitObject.shininess)
-                                        * state.getLight().lightIntensity;
+    float RdotV = std::max(0.0f, dot(reflectDir, viewDir));
+    Vec3f specular = hitObject.specularColor * std::pow(RdotV, hitObject.shininess) * state.getLight().lightIntensity;
 
     // lokaler Phong-Anteil
     Vec3f phongColor = ambient + S_i * (diffuse + specular);
@@ -466,7 +474,32 @@ Vec3f OpenGLView::traceRay(const Ray<float>& ray, int recursion_depth, unsigned 
         phongColor += k_r * reflectionColor;
     }
 
+    // 7. Transparenz und Brechung
+    float k_t = hitObject.transparency; // Transparenz-„Faktor“
+    if (k_t > 0.0f) {
+        float eta = hitObject.refractiveIndex; // Brechungsindex des Materials
+        Vec3f refractDir = refract(ray.d, normal, eta);
+        if (refractDir.length() > 0) {
+            Ray<float> refractionRay(intersectionPoint - normal * eps, refractDir);
+            Vec3f refractionColor = traceRay(refractionRay, recursion_depth - 1, intersectionTests);
+
+            // Transparenzanteil hinzufügen
+            phongColor += k_t * refractionColor;
+        }
+    }
+
     return phongColor;
+}
+
+Vec3f OpenGLView::refract(const Vec3f& incident, const Vec3f& normal, float eta) {
+    float NdotI = dot(normal, incident);
+    float k = 1.0f - eta * eta * (1.0f - NdotI * NdotI);
+    if (k <= 0.0f) {
+        return Vec3f(0.0f, 0.0f, 0.0f); // Totale interne Reflexion
+    }
+    else {
+        return eta * incident - (eta * NdotI + sqrt(k)) * normal;
+    }
 }
 
 void OpenGLView::raytrace() {
