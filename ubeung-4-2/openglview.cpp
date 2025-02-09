@@ -17,6 +17,7 @@
 
 #include "shader.h"
 #include "openglview.h"
+#include "stb_image.h"
 
 // These variables are missing on MacOS -> This should fix them.
 #ifndef GL_MAX_FRAMEBUFFER_WIDTH
@@ -26,6 +27,11 @@
 #ifndef GL_MAX_FRAMEBUFFER_HEIGHT
 #define GL_MAX_FRAMEBUFFER_HEIGHT         0x9316
 #endif
+
+GLuint depthMapFBO;
+GLuint textureID;
+GLuint shaderProgram;
+GLuint depthShaderID;
 
 const unsigned int SHADOW_MAP_SIZE = 2048;
 
@@ -142,8 +148,30 @@ void OpenGLView::initializeGL()
     rayTracingProgramID = readShaders(f, "../ubeung-4-2/Shader/noop.vert", "../ubeung-4-2/Shader/from_texture.frag");
 
     // TODO: Ex 4.2a Implement shader for calculation of shadow map
+    depthShaderID = readShaders(f, "../ubeung-4-2/Shader/shadow_map.vert", "../ubeung-4-2/Shader/shadow_map.frag");
 
     // TODO: Ex 4.2a Generate shadow map texture and framebuffer, generate light projection matrix
+
+    // Erstelle fbo
+    GLuint fbo;
+    f->glGenFramebuffers(1, &fbo);
+    f->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    // Erstelle Textur
+    GLuint texColorBuffer;
+    f->glGenTextures(1, &texColorBuffer);
+    f->glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+    f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    f->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+
+    GLuint rbo;
+    f->glGenRenderbuffers(1, &rbo);
+    f->glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    f->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width(), height());
+    f->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
     state.setCurrentProgram(currentProgramID);
 
