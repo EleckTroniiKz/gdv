@@ -140,11 +140,16 @@ void OpenGLView::initializeGL()
     currentProgramID = lightShaderID;
     // TODO: Ex 4.1a Implement shader for Phong lighting
 
+    // Load Shaders 
     GLuint phongShaderID = readShaders(f, "../uebung-4/Shader/phong.vert", "../uebung-4/Shader/phong.frag");
+    // Check if shaders were coimpiled nicely
     if (phongShaderID != 0) {
+        // add shader program id to list of avaible shader probrams
         programIDs.push_back(phongShaderID);
+        // set current programId to phong shader
         currentProgramID = phongShaderID;
     }
+    // use phong shader for rendering (if it was successfuly compiled)
     state.setCurrentProgram(currentProgramID);
 
     // TODO: Ex 4.2b Implement shader for Blinn-Phong lighting using shadow map
@@ -155,8 +160,6 @@ void OpenGLView::initializeGL()
         GLuint shaderID = readShaders(f, i.first, i.second);
         if (shaderID != 0) programIDs.push_back(shaderID);
     }
-
-    rayTracingProgramID = readShaders(f, "../uebung-4/Shader/noop.vert", "../uebung-4/Shader/from_texture.frag");
 
     // TODO: Ex 4.2a Implement shader for calculation of shadow map
 
@@ -401,27 +404,27 @@ GLuint OpenGLView::genCSVAO() {
 }
 
 Vec3f OpenGLView::traceRay(const Ray<float>& ray, int recursion_depth, unsigned int& intersectionTests) {
-    // 1. Abbruchbedingung: keine weitere Reflexion mehr
+    // 1. Termination condition: If depth is zero, then stop shooting and tracing rays
     if (recursion_depth <= 0) {
         return Vec3f(0.0f, 0.0f, 0.0f); // Schwarz
     }
 
-    // 2. Nächsten Schnittpunkt suchen
-    float t = std::numeric_limits<float>::max();
-    float u = 0.f, v = 0.f;
-    unsigned int hitTri = 0;
+    // 2. look for next intersection
+    float t = std::numeric_limits<float>::max(); // intiialize to possible maximum
+    float u = 0.f, v = 0.f; // barycentric coordinates for triangle intersection
+    unsigned int hitTri = 0; // id of triangle that was hit
     auto hitObjIt = intersectRayObjectsEarliest(objects.cbegin(), objects.cend(), ray, t, u, v, hitTri, intersectionTests);
 
-    // Falls gar kein Objekt getroffen wurde => Hintergrundfarbe (schwarz)
+    // If no object hit, show black background color
     if (hitObjIt == objects.cend()) {
         return Vec3f(0.0f, 0.0f, 0.0f);
     }
 
-    // 3. Schnittpunkt & Normalen berechnen
+    // 3. calculate intersection point
     const SceneObject& hitObject = *hitObjIt;
     Vec3f intersectionPoint = ray.o + t * ray.d;
 
-    // Dreiecks-Eckpunkte aus dem Mesh
+    // triangle vertices from object's mesh
     const auto& vertices = hitObject.mesh.getVertices();
     const auto& triangles = hitObject.mesh.getTriangles();
     const Vec3ui& tri = triangles[hitTri];
@@ -429,61 +432,69 @@ Vec3f OpenGLView::traceRay(const Ray<float>& ray, int recursion_depth, unsigned 
     Vec3f p1 = vertices[tri[1]];
     Vec3f p2 = vertices[tri[2]];
 
-    // Normalenvektor des getroffenen Dreiecks (ggf. glätten über Vertexnormalen, je nach Aufgabe)
+    // normal vector of intersected triangle
     Vec3f normal = cross(p1 - p0, p2 - p0).normalized();
 
-    // 4. Schattentest (S_i)
-    // Kleinen Offset in Normalenrichtung, damit wir nicht „uns selbst“ treffen
+    // 4. Shadow Test
+    // offset iwth epsilon, so it does not intersect it self
     const float eps = 1e-3f;
     Vec3f lightPos = state.getLight().position;
     Vec3f lightDir = (lightPos - intersectionPoint).normalized();
     float lightDist = (lightPos - intersectionPoint).length();
 
+    // shoot shadow ray to light source
     Ray<float> shadowRay(intersectionPoint + normal * eps, lightDir);
     float shadowT;
     unsigned int shadowTri;
     float dummyU, dummyV;
     auto shadowHit = intersectRayObjectsEarliest(objects.cbegin(), objects.cend(), shadowRay, shadowT, dummyU, dummyV, shadowTri, intersectionTests);
 
-    // Falls wir ein Objekt treffen UND es vor der Lichtquelle liegt => Schatten
-    float S_i = 1.0f;
+    // If object is hit before the light, poiint is in a shadow
+    float S_i = 1.0f; // 1 = lit, 0 = not so lit
     if (shadowHit != objects.cend() && shadowT < lightDist) {
         S_i = 0.0f;
     }
 
-    // 5. Phong-Beleuchtung für diesen Schnittpunkt
+    // 5. calculate phong lighting at intersection
     Vec3f viewDir = (ray.o - intersectionPoint).normalized();
     Vec3f ambient = hitObject.ambientColor * state.getLight().ambientIntensity;
+
+    // diffuse
     float NdotL = std::max(0.0f, dot(normal, lightDir));
     Vec3f diffuse = hitObject.diffuseColor * NdotL * state.getLight().lightIntensity;
+    
+    // specular
     Vec3f reflectDir = (2.0f * normal * (normal * lightDir) - lightDir).normalized();
     float RdotV = std::max(0.0f, dot(reflectDir, viewDir));
     Vec3f specular = hitObject.specularColor * std::pow(RdotV, hitObject.shininess) * state.getLight().lightIntensity;
 
-    // lokaler Phong-Anteil
+    // combine ambient, diffuse and specular color with the shadow factor to have the phong Color
     Vec3f phongColor = ambient + S_i * (diffuse + specular);
 
-    // 6. Rekursive Reflexion
-    float k_r = hitObject.reflectionIntensity; // Reflexions-„Glanz“
+    // 6. recursive
+    float k_r = hitObject.reflectionIntensity; // intensity of reflection (I)
     if (k_r > 0.0f) {
-        // Reflexionsstrahl erzeugen
+        // generate reflection
         Ray<float> reflectionRay(intersectionPoint + normal * eps, reflectDir);
-        Vec3f reflectionColor = traceRay(reflectionRay, recursion_depth - 1, intersectionTests);
+        Vec3f reflectionColor = traceRay(reflectionRay, recursion_depth - 1, intersectionTests); //trace recursively
 
-        // Reflexionsanteil hinzufügen
+        // add reflection into the phong  Color
         phongColor += k_r * reflectionColor;
     }
 
-    // 7. Transparenz und Brechung
-    float k_t = hitObject.transparency; // Transparenz-„Faktor“
+    // 7. transparency
+    float k_t = hitObject.transparency; // transparency factor
     if (k_t > 0.0f) {
-        float eta = hitObject.refractiveIndex; // Brechungsindex des Materials
-        Vec3f refractDir = refract(ray.d, normal, eta);
+        float refractionIndex = hitObject.refractiveIndex; // refractive index of the object
+        Vec3f refractDir = refract(ray.d, normal, refractionIndex);// refraction direction
+        // if the refractDirection is valid, acually calculated the color and add the color value
         if (refractDir.length() > 0) {
+            // generate refraction ray with offset
             Ray<float> refractionRay(intersectionPoint - normal * eps, refractDir);
+            // recursive tracing the refraction ray
             Vec3f refractionColor = traceRay(refractionRay, recursion_depth - 1, intersectionTests);
 
-            // Transparenzanteil hinzufügen
+            // add transparency part of coloring
             phongColor += k_t * refractionColor;
         }
     }
@@ -493,11 +504,16 @@ Vec3f OpenGLView::traceRay(const Ray<float>& ray, int recursion_depth, unsigned 
 
 Vec3f OpenGLView::refract(const Vec3f& incident, const Vec3f& normal, float eta) {
     float NdotI = dot(normal, incident);
+    // discriminant for refraction equation
     float k = 1.0f - eta * eta * (1.0f - NdotI * NdotI);
+
+    // if negative/zero, no refraction occurs
     if (k <= 0.0f) {
         return Vec3f(0.0f, 0.0f, 0.0f); // Totale interne Reflexion
     }
     else {
+        // refracted direction 
+        // https://registry.khronos.org/OpenGL-Refpages/gl4/html/refract.xhtml
         return eta * incident - (eta * NdotI + sqrt(k)) * normal;
     }
 }
