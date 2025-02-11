@@ -1,5 +1,6 @@
 #version 330 core
+
 void main()
 {
-    // no color output, depth only
+    // no need for fragment shading because no color buffer, and no draw or read buffer
 }

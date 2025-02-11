@@ -145,6 +145,7 @@ void OpenGLView::initializeGL()
         if (shaderID != 0) programIDs.push_back(shaderID);
     }
 
+    // load and compile shader like in 4.1
     rayTracingProgramID = readShaders(f, "../ubeung-4-2/Shader/noop.vert", "../ubeung-4-2/Shader/from_texture.frag");
 
     // TODO: Ex 4.2a Implement shader for calculation of shadow map
@@ -152,25 +153,31 @@ void OpenGLView::initializeGL()
 
     // TODO: Ex 4.2a Generate shadow map texture and framebuffer, generate light projection matrix
 
-    // Erstelle fbo
+    // create framebuffer for shadopw map and bind buffer
     GLuint fbo;
     f->glGenFramebuffers(1, &fbo);
     f->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    // Erstelle Textur
+    // create texture buffer and bind
     GLuint texColorBuffer;
     f->glGenTextures(1, &texColorBuffer);
     f->glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-    f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    // prepare memory for texture
+    f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // attach texture to framebuffer as color attachment
     f->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
 
+    // create renderbuffer for depth
     GLuint rbo;
     f->glGenRenderbuffers(1, &rbo);
     f->glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    //prepare storage for rbo
     f->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width(), height());
+    // attach renderbuffer to framebudder as depth attachment
     f->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
     state.setCurrentProgram(currentProgramID);
@@ -215,6 +222,7 @@ void OpenGLView::paintGL() {
         if (lightMoves) moveLight();
 
         //TODO: Ex 4.2a Render depth map
+
         
         //translate to center, rotate and render coordinate system and light sphere
         QVector3D cameraLookAt = cameraPos + cameraDir;

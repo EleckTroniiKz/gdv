@@ -1,9 +1,12 @@
 #version 330 core
-layout(location = 0) in vec3 a_position;
-uniform mat4 u_lightSpaceMatrix;
-uniform mat4 u_modelMatrix;
+
+layout (location = 0) in vec3 aPos;
+// matrices to project vertex coords from point of view of light
+uniform mat4 lightSpaceMatrix; 
+uniform mat4 model;
 
 void main()
 {
-    gl_Position = u_lightSpaceMatrix * u_modelMatrix * vec4(a_position, 1.0);
+    // calculate projectioncoordinate in lightspace
+    gl_Position = lightSpaceMatrix * model * vec4(aPos, 1.0);
 }
