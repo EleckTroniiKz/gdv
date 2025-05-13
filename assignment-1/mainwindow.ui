@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1024</width>
+    <height>768</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>TU Darmstadt, GDV1, OpenGL Praxisübung 1</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="OpenGLView" name="openGLWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>5</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="baseSize">
+       <size>
+        <width>800</width>
+        <height>600</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="verticalWidget" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QPushButton" name="resetViewButton">
+         <property name="text">
+          <string>Ansicht zurücksetzen</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="recalcNormalsByAngleButton">
+         <property name="text">
+          <string>Normalen neu berechnen
+(Winkelgewichtung)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="recalcNormalsByAreaButton">
+         <property name="text">
+          <string>Normalen neu berechnen
+(Flächengewichtung)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="lightMovementCheckBox">
+         <property name="text">
+          <string>Lichtbewegung</string>
+         </property>
+        </widget>
+       </item>
+		  <item>
+			  <widget class="QCheckBox" name="normalRenderCheckBox">
+				  <property name="text">
+					  <string>Normalen rendern</string>
+				  </property>
+			  </widget>
+		  </item>
+		  <item>
+			  <widget class="QLineEdit" name="renderCountInput">
+				  <property name="text">
+					  <string></string>
+				  </property>
+			  </widget>
+		  </item>
+		  <item>
+			  <widget class="QPushButton" name="overclockRenderingButton">
+				  <property name="text">
+					  <string>x Objekte rendern</string>
+				  </property>
+			  </widget>
+		  </item>
+       <item>
+        <widget class="QLabel" name="movementExplanationLabel">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;h4&gt;Bewegungssteuerung:&lt;/h4&gt;&lt;p&gt;&lt;h5&gt;linke Maustaste:&lt;/h5&gt;&lt;br/&gt;Rotation um Achsen&lt;/p&gt;&lt;p&gt;&lt;h5&gt;rechte Maustaste:&lt;/h5&gt;&lt;br/&gt;Zoom/Vorwärts-Rückwärts&lt;/p&gt;&lt;p&gt;&lt;h5&gt;mittlere Maustaste:&lt;/h5&gt;&lt;br/&gt;hoch/runter/links/rechts&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="exitButton">
+         <property name="text">
+          <string>Beenden</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>OpenGLView</class>
+   <extends>QOpenGLWidget</extends>
+   <header>openglview.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
